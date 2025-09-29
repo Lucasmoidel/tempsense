@@ -74,10 +74,8 @@ static void s_mqtt_connection_cb(mqtt_client_t* client, void* arg, mqtt_connecti
     if (status == MQTT_CONNECT_ACCEPTED) {
         printf("Connected to MQTT broker successfully!\n");
 
-        Example: subscribe
         mqtt_subscribe(client, "test/topic", 1, nullptr, nullptr);
 
-        Example: publish
         const char* msg = "Hello from Pico W";
         mqtt_publish(client, "test/topic", msg, strlen(msg), 1, 0, nullptr, nullptr);
     } else {
