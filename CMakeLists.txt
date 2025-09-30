@@ -3,7 +3,7 @@
 cmake_minimum_required(VERSION 3.13)
 
 set(CMAKE_C_STANDARD 11)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Initialise pico_sdk from installed location
@@ -35,7 +35,7 @@ pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(tempsense tempsense.cpp )
+add_executable(tempsense tempsense.cpp ssd1306.c)
 
 pico_set_program_name(tempsense "tempsense")
 pico_set_program_version(tempsense "0.1")
@@ -47,14 +47,17 @@ target_compile_definitions(tempsense PRIVATE LWIP_MQTT=1 PICO_CYW43_ARCH_THREADS
 
 
 # Add the standard library to the build
-target_link_libraries(tempsense
-        pico_stdlib)
-target_sources(tempsense PRIVATE
-    ${PICO_SDK_PATH}/lib/lwip/src/apps/mqtt/mqtt.c
-)
+target_link_libraries(tempsense pico_stdlib)
+target_sources(tempsense PRIVATE ${PICO_SDK_PATH}/lib/lwip/src/apps/mqtt/mqtt.c )
 # Add the standard include files to the build
 target_include_directories(tempsense PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}   # this makes lwipopts.h in your project override the SDK one
+    ${CMAKE_CURRENT_LIST_DIR}/BME280_SensorAPI
+    ${CMAKE_CURRENT_LIST_DIR}/BME280_SensorAPI/examples/common
+    ${CMAKE_CURRENT_LIST_DIR}/BME280_SensorAPI/examples/humidity
+    ${CMAKE_CURRENT_LIST_DIR}/BME280_SensorAPI/examples/pressure
+    ${CMAKE_CURRENT_LIST_DIR}/BME280_SensorAPI/examples/temperature
+
 )
 
 # Add any user requested libraries
