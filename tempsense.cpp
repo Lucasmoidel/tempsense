@@ -49,7 +49,6 @@ int main() {
     setup_gpios();
     while (true) {
         cyw43_arch_poll();   // important for polled mode, safe in background too
-
         mqtt_publish(client, "bedroom/temperatureC", "32.00", 5, 1,1,nullptr,nullptr);
         mqtt_publish(client, "bedroom/temperatureF", "32.00", 5, 1,1,nullptr,nullptr);
         mqtt_publish(client, "bedroom/humidity", "50.00", 5, 1,1,nullptr,nullptr);
@@ -77,21 +76,13 @@ void connectMQTT() {
 
     memset(&client_info_, 0, sizeof(client_info_));
     client_info_.client_id = "bedroom";
-    printf("a");
     mqtt_client_connect(client, &broker_ip, broker_port, s_mqtt_connection_cb, nullptr, &client_info_);
-    printf("b");
 }
 
 static void s_mqtt_connection_cb(mqtt_client_t* client, void* arg, mqtt_connection_status_t status) {
-    printf("c");
     if (status == MQTT_CONNECT_ACCEPTED) {
         printf("Connected to MQTT broker successfully!\n");
-
-        mqtt_subscribe(client, "test/topic", 1, nullptr, nullptr);
-
-        const char* msg = "Hello from Pico W";
-        mqtt_publish(client, "test/topic", msg, strlen(msg), 1, 0, nullptr, nullptr);
-    } else {
+        } else {
         printf("MQTT connection failed with status: %d\n", status);
     }
 }
