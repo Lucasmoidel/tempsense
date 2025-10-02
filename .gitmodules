@@ -1,3 +1,6 @@
 [submodule "BME280_SensorAPI"]
 	path = BME280_SensorAPI
 	url = https://github.com/boschsensortec/BME280_SensorAPI
+[submodule "pico-devices"]
+	path = pico-devices
+	url = https://github.com/fivdi/pico-devices.git
