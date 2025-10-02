@@ -1,0 +1,14 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : [],
+		"files" : [],
+		"nodes" : []
+	},
+	"installers" : [],
+	"paths" : 
+	{
+		"build" : "pico-devices/src/common/system_callbacks",
+		"source" : "pico-devices/src/common/system_callbacks"
+	}
+}

@@ -47,20 +47,25 @@ target_compile_definitions(tempsense PRIVATE LWIP_MQTT=1 PICO_CYW43_ARCH_THREADS
 
 
 # Add the standard library to the build
-target_link_libraries(tempsense pico_stdlib)
 target_sources(tempsense PRIVATE ${PICO_SDK_PATH}/lib/lwip/src/apps/mqtt/mqtt.c )
 # Add the standard include files to the build
 target_include_directories(tempsense PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}   # this makes lwipopts.h in your project override the SDK one
-    ${CMAKE_CURRENT_LIST_DIR}/BME280_SensorAPI
-    ${CMAKE_CURRENT_LIST_DIR}/BME280_SensorAPI/examples/common
+    ${CMAKE_CURRENT_LIST_DIR}/pico-devices
+
 
 )
 
+
+add_subdirectory("pico-devices")
+
 # Add any user requested libraries
 target_link_libraries(tempsense 
+        pico_stdlib
         hardware_i2c
         pico_cyw43_arch_lwip_threadsafe_background
+        sensor_bme280
+        callbacks_blocking
         )
 
 pico_add_extra_outputs(tempsense)
