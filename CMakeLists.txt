@@ -54,9 +54,6 @@ target_include_directories(tempsense PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}   # this makes lwipopts.h in your project override the SDK one
     ${CMAKE_CURRENT_LIST_DIR}/BME280_SensorAPI
     ${CMAKE_CURRENT_LIST_DIR}/BME280_SensorAPI/examples/common
-    ${CMAKE_CURRENT_LIST_DIR}/BME280_SensorAPI/examples/humidity
-    ${CMAKE_CURRENT_LIST_DIR}/BME280_SensorAPI/examples/pressure
-    ${CMAKE_CURRENT_LIST_DIR}/BME280_SensorAPI/examples/temperature
 
 )
 

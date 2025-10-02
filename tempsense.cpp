@@ -4,10 +4,8 @@
 #include "pico/cyw43_arch.h"
 #include "lwip/apps/mqtt.h"
 #include "wifi.h"
-//#include "bme280.h"
-//#include "humidity.c"
-//#include "temperature.c"
-//#include "pressure.c"
+#include "bme280.h"
+#include "common.h"
 #include "ssd1306.h"
 #include "font.h"
 #include <format>
@@ -20,11 +18,22 @@ ssd1306_t disp;
 
 u_int8_t *ip_address;
 
+#define SAMPLE_COUNT  UINT8_C(50)
+
+
 // Forward declarations
 void connectMQTT();
 void setup_gpios(); 
 void drawtext(std::string str, int x, int y, uint8_t *font=font_8x5);
 static void s_mqtt_connection_cb(mqtt_client_t* client, void* arg, mqtt_connection_status_t status);
+
+bool setupBME();
+
+static int8_t get_temperature(uint32_t period, struct bme280_dev *dev);
+static int8_t get_humidity(uint32_t period, struct bme280_dev *dev);
+static int8_t get_pressure(uint32_t period, struct bme280_dev *dev);
+
+
 
 int main() {
     stdio_init_all();
@@ -47,6 +56,7 @@ int main() {
     }
     connectMQTT();
     setup_gpios();
+    setupBME();
     while (true) {
         cyw43_arch_poll();   // important for polled mode, safe in background too
         mqtt_publish(client, "bedroom/temperatureC", "32.00", 5, 1,1,nullptr,nullptr);
@@ -103,4 +113,171 @@ void drawtext(std::string str, int x, int y, uint8_t *font){
 
     ssd1306_draw_string_with_font(&disp, x, y, 1, font, str.c_str());
     ssd1306_show(&disp);
+}
+
+
+bool setupBME(){
+        int8_t rslt;
+    uint32_t period;
+    struct bme280_dev dev;
+    struct bme280_settings settings;
+
+    /* Interface selection is to be updated as parameter
+     * For I2C :  BME280_I2C_INTF
+     * For SPI :  BME280_SPI_INTF
+     */
+    rslt = bme280_interface_selection(&dev, BME280_I2C_INTF);
+    bme280_error_codes_print_result("bme280_interface_selection", rslt);
+
+    rslt = bme280_init(&dev);
+    bme280_error_codes_print_result("bme280_init", rslt);
+
+    /* Always read the current settings before writing, especially when all the configuration is not modified */
+    rslt = bme280_get_sensor_settings(&settings, &dev);
+    bme280_error_codes_print_result("bme280_get_sensor_settings", rslt);
+
+    /* Configuring the over-sampling rate, filter coefficient and standby time */
+    /* Overwrite the desired settings */
+    settings.filter = BME280_FILTER_COEFF_2;
+
+    /* Over-sampling rate for humidity, temperature and pressure */
+    settings.osr_h = BME280_OVERSAMPLING_1X;
+    settings.osr_p = BME280_OVERSAMPLING_1X;
+    settings.osr_t = BME280_OVERSAMPLING_1X;
+
+    /* Setting the standby time */
+    settings.standby_time = BME280_STANDBY_TIME_0_5_MS;
+
+    rslt = bme280_set_sensor_settings(BME280_SEL_ALL_SETTINGS, &settings, &dev);
+    bme280_error_codes_print_result("bme280_set_sensor_settings", rslt);
+
+    /* Always set the power mode after setting the configuration */
+    rslt = bme280_set_sensor_mode(BME280_POWERMODE_NORMAL, &dev);
+    bme280_error_codes_print_result("bme280_set_power_mode", rslt);
+
+    /* Calculate measurement time in microseconds */
+    rslt = bme280_cal_meas_delay(&period, &settings);
+    bme280_error_codes_print_result("bme280_cal_meas_delay", rslt);
+
+    printf("\nTemperature calculation (Data displayed are compensated values)\n");
+    printf("Measurement time : %lu us\n\n", (long unsigned int)period);
+
+    rslt = get_temperature(period, &dev);
+    bme280_error_codes_print_result("get_temperature", rslt);
+
+    bme280_coines_deinit();
+
+    return true;
+}
+
+static int8_t get_temperature(uint32_t period, struct bme280_dev *dev)
+{
+    int8_t rslt = BME280_E_NULL_PTR;
+    int8_t idx = 0;
+    uint8_t status_reg;
+    struct bme280_data comp_data;
+
+    while (idx < SAMPLE_COUNT)
+    {
+        rslt = bme280_get_regs(BME280_REG_STATUS, &status_reg, 1, dev);
+        bme280_error_codes_print_result("bme280_get_regs", rslt);
+
+        if (status_reg & BME280_STATUS_MEAS_DONE)
+        {
+            /* Measurement time delay given to read sample */
+            dev->delay_us(period, dev->intf_ptr);
+
+            /* Read compensated data */
+            rslt = bme280_get_sensor_data(BME280_TEMP, &comp_data, dev);
+            bme280_error_codes_print_result("bme280_get_sensor_data", rslt);
+
+#ifndef BME280_DOUBLE_ENABLE
+            comp_data.temperature = comp_data.temperature / 100;
+#endif
+
+#ifdef BME280_DOUBLE_ENABLE
+            printf("Temperature[%d]:   %lf deg C\n", idx, comp_data.temperature);
+#else
+            printf("Temperature[%d]:   %ld deg C\n", idx, (long int)comp_data.temperature);
+#endif
+            idx++;
+        }
+    }
+
+    return rslt;
+}
+
+static int8_t get_humidity(uint32_t period, struct bme280_dev *dev)
+{
+    int8_t rslt = BME280_E_NULL_PTR;
+    int8_t idx = 0;
+    uint8_t status_reg;
+    struct bme280_data comp_data;
+
+    while (idx < SAMPLE_COUNT)
+    {
+        rslt = bme280_get_regs(BME280_REG_STATUS, &status_reg, 1, dev);
+        bme280_error_codes_print_result("bme280_get_regs", rslt);
+
+        if (status_reg & BME280_STATUS_MEAS_DONE)
+        {
+            /* Measurement time delay given to read sample */
+            dev->delay_us(period, dev->intf_ptr);
+
+            /* Read compensated data */
+            rslt = bme280_get_sensor_data(BME280_HUM, &comp_data, dev);
+            bme280_error_codes_print_result("bme280_get_sensor_data", rslt);
+
+#ifndef BME280_DOUBLE_ENABLE
+            comp_data.humidity = comp_data.humidity / 1000;
+#endif
+
+#ifdef BME280_DOUBLE_ENABLE
+            printf("Humidity[%d]:   %lf %%RH\n", idx, comp_data.humidity);
+#else
+            printf("Humidity[%d]:   %lu %%RH\n", idx, (long unsigned int)comp_data.humidity);
+#endif
+            idx++;
+        }
+    }
+
+    return rslt;
+}
+
+
+static int8_t get_pressure(uint32_t period, struct bme280_dev *dev)
+{
+    int8_t rslt = BME280_E_NULL_PTR;
+    int8_t idx = 0;
+    uint8_t status_reg;
+    struct bme280_data comp_data;
+
+    while (idx < SAMPLE_COUNT)
+    {
+        rslt = bme280_get_regs(BME280_REG_STATUS, &status_reg, 1, dev);
+        bme280_error_codes_print_result("bme280_get_regs", rslt);
+
+        if (status_reg & BME280_STATUS_MEAS_DONE)
+        {
+            /* Measurement time delay given to read sample */
+            dev->delay_us(period, dev->intf_ptr);
+
+            /* Read compensated data */
+            rslt = bme280_get_sensor_data(BME280_PRESS, &comp_data, dev);
+            bme280_error_codes_print_result("bme280_get_sensor_data", rslt);
+
+#ifdef BME280_64BIT_ENABLE
+            comp_data.pressure = comp_data.pressure / 100;
+#endif
+
+#ifdef BME280_DOUBLE_ENABLE
+            printf("Pressure[%d]:  %lf Pa\n", idx, comp_data.pressure);
+#else
+            printf("Pressure[%d]:   %lu Pa\n", idx, (long unsigned int)comp_data.pressure);
+#endif
+            idx++;
+        }
+    }
+
+    return rslt;
 }

@@ -48,7 +48,7 @@
 			{
 				"command" : 3,
 				"file" : 0,
-				"line" : 69,
+				"line" : 66,
 				"parent" : 0
 			},
 			{
@@ -102,7 +102,7 @@
 			{
 				"command" : 4,
 				"file" : 0,
-				"line" : 64,
+				"line" : 61,
 				"parent" : 0
 			},
 			{
@@ -472,18 +472,6 @@
 				{
 					"backtrace" : 19,
 					"path" : "/home/lucas/Documents/tempsense/BME280_SensorAPI/examples/common"
-				},
-				{
-					"backtrace" : 19,
-					"path" : "/home/lucas/Documents/tempsense/BME280_SensorAPI/examples/humidity"
-				},
-				{
-					"backtrace" : 19,
-					"path" : "/home/lucas/Documents/tempsense/BME280_SensorAPI/examples/pressure"
-				},
-				{
-					"backtrace" : 19,
-					"path" : "/home/lucas/Documents/tempsense/BME280_SensorAPI/examples/temperature"
 				},
 				{
 					"backtrace" : 5,
@@ -1162,18 +1150,6 @@
 				{
 					"backtrace" : 19,
 					"path" : "/home/lucas/Documents/tempsense/BME280_SensorAPI/examples/common"
-				},
-				{
-					"backtrace" : 19,
-					"path" : "/home/lucas/Documents/tempsense/BME280_SensorAPI/examples/humidity"
-				},
-				{
-					"backtrace" : 19,
-					"path" : "/home/lucas/Documents/tempsense/BME280_SensorAPI/examples/pressure"
-				},
-				{
-					"backtrace" : 19,
-					"path" : "/home/lucas/Documents/tempsense/BME280_SensorAPI/examples/temperature"
 				},
 				{
 					"backtrace" : 5,
@@ -2026,18 +2002,6 @@
 				{
 					"backtrace" : 19,
 					"path" : "/home/lucas/Documents/tempsense/BME280_SensorAPI/examples/common"
-				},
-				{
-					"backtrace" : 19,
-					"path" : "/home/lucas/Documents/tempsense/BME280_SensorAPI/examples/humidity"
-				},
-				{
-					"backtrace" : 19,
-					"path" : "/home/lucas/Documents/tempsense/BME280_SensorAPI/examples/pressure"
-				},
-				{
-					"backtrace" : 19,
-					"path" : "/home/lucas/Documents/tempsense/BME280_SensorAPI/examples/temperature"
 				},
 				{
 					"backtrace" : 5,
