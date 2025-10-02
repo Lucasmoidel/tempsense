@@ -65,7 +65,7 @@ int main() {
         tempC = r.temperature;
         tempF = (r.temperature * 9/5) + 32;
         humidity = r.humidity;
-        pressure = r.pressure;
+        pressure = (r.pressure / 1000.0);
 
         tempCstr.str("");
         tempFstr.str("");
@@ -96,10 +96,10 @@ int main() {
         humiditystr.clear();
         pressurestr.clear();
 
-        tempCstr << "TEMPERATURE: " << std::fixed << std::setprecision(2) << tempC << "C";
+        //tempCstr << "TEMPERATURE: " << std::fixed << std::setprecision(2) << tempC << "°C";
         tempFstr << "TEMPERATURE: " << std::fixed << std::setprecision(2) << tempF << "F";
         humiditystr << "HUMIDITY: " << std::fixed << std::setprecision(2) << humidity << "%";
-        pressurestr << "PRESSURE: " << std::fixed << std::setprecision(2) << pressure << "Pa";
+        pressurestr << "PRESSURE: " << std::fixed << std::setprecision(2) << pressure << "kPa";
 
         drawtext(tempFstr.str().c_str(), 0, 0);
         drawtext(humiditystr.str().c_str(), 0, 10);
