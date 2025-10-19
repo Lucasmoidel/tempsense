@@ -57,10 +57,10 @@ int main() {
     connectMQTT();
     setup_gpios();
     ssd1306_clear(&disp);
-
+    bme280_reading_t r;
     while (true) {
         cyw43_arch_poll();   // important for polled mode, safe in background too
-        bme280_reading_t r;
+
         bme280_read(&bme280, &r);
         tempC = r.temperature;
         tempF = (r.temperature * 9/5) + 32;
