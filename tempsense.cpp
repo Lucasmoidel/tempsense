@@ -15,9 +15,11 @@
 // Globals
 mqtt_client_t *client;
 struct mqtt_connect_client_info_t client_info_;
+uint8_t ip_address[4];
+volatile bool mqtt_ready = false;
+
 ssd1306_t disp;
 bme280_t bme280;
-u_int8_t *ip_address;
 
 float tempC = 0.0;
 float tempF = 0.0;
@@ -32,13 +34,11 @@ std::stringstream pressurestr;
 // Forward declarations
 void connectMQTT();
 void setup_gpios(); 
-void drawtext(std::string str, int x, int y, uint8_t *font=font_8x5);
 static void s_mqtt_connection_cb(mqtt_client_t* client, void* arg, mqtt_connection_status_t status);
 
 int main() {
     stdio_init_all();
-
-    if (cyw43_arch_init()) {
+    if (cyw43_arch_init_with_country(CYW43_COUNTRY_USA)!=0) {
         printf("Wi-Fi init failed\n");
         return -1;
     }
@@ -51,7 +51,13 @@ int main() {
         return 1;
     } else {
         printf("Connected.\n");
-        ip_address = (uint8_t*)&(cyw43_state.netif[0].ip_addr.addr);
+        auto ip = cyw43_state.netif[0].ip_addr.addr;
+
+        ip_address[0] = ip & 0xFF;
+        ip_address[1] = (ip >> 8) & 0xFF;
+        ip_address[2] = (ip >> 16) & 0xFF;
+        ip_address[3] = (ip >> 24) & 0xFF;
+
         printf("IP address %d.%d.%d.%d\n", ip_address[0], ip_address[1], ip_address[2], ip_address[3]);
     }
     connectMQTT();
@@ -59,8 +65,6 @@ int main() {
     ssd1306_clear(&disp);
     bme280_reading_t r;
     while (true) {
-        cyw43_arch_poll();   // important for polled mode, safe in background too
-
         bme280_read(&bme280, &r);
         tempC = r.temperature;
         tempF = (r.temperature * 9/5) + 32;
@@ -82,10 +86,15 @@ int main() {
         pressurestr << std::fixed << std::setprecision(2) << pressure;
        
 
-        mqtt_publish(client, "bedroom/temperatureC", tempCstr.str().c_str(), tempCstr.str().length(), 1,1,nullptr,nullptr);
-        mqtt_publish(client, "bedroom/temperatureF", tempFstr.str().c_str(), tempFstr.str().length(), 1,1,nullptr,nullptr);
-        mqtt_publish(client, "bedroom/humidity", humiditystr.str().c_str(), humiditystr.str().length(), 1,1,nullptr,nullptr);
-        mqtt_publish(client, "bedroom/pressure", pressurestr.str().c_str(), pressurestr.str().length(), 1,1,nullptr,nullptr);
+        if (mqtt_ready) {
+            mqtt_publish(client, "bedroom/temperatureC", tempCstr.str().c_str(), tempCstr.str().length(), 1,1,nullptr,nullptr);
+            mqtt_publish(client, "bedroom/temperatureF", tempFstr.str().c_str(), tempFstr.str().length(), 1,1,nullptr,nullptr);
+            mqtt_publish(client, "bedroom/humidity", humiditystr.str().c_str(), humiditystr.str().length(), 1,1,nullptr,nullptr);
+            mqtt_publish(client, "bedroom/pressure", pressurestr.str().c_str(), pressurestr.str().length(), 1,1,nullptr,nullptr);
+        }
+        else {
+            printf("Skipping publish — MQTT not ready\n");
+        }
 
         tempCstr.str("");
         tempFstr.str("");
@@ -100,14 +109,17 @@ int main() {
         tempFstr << "TEMPERATURE: " << std::fixed << std::setprecision(2) << tempF << "F";
         humiditystr << "HUMIDITY: " << std::fixed << std::setprecision(2) << humidity << "%";
         pressurestr << "PRESSURE: " << std::fixed << std::setprecision(2) << pressure << "kPa";
+        
+        ssd1306_draw_string_with_font(&disp, 0, 0, 1, font_8x5, tempFstr.str().c_str());
+        ssd1306_draw_string_with_font(&disp, 0, 10, 1, font_8x5, humiditystr.str().c_str());
+        ssd1306_draw_string_with_font(&disp, 0, 20, 1, font_8x5, pressurestr.str().c_str());
+        ssd1306_draw_string_with_font(&disp, 0, 40, 1, font_8x5, std::format("IP: {}.{}.{}.{}\n", ip_address[0], ip_address[1], ip_address[2], ip_address[3]).c_str());
 
-        drawtext(tempFstr.str().c_str(), 0, 0);
-        drawtext(humiditystr.str().c_str(), 0, 10);
-        drawtext(pressurestr.str().c_str(), 0, 20);
-        drawtext(std::format("IP: {}.{}.{}.{}\n", ip_address[0], ip_address[1], ip_address[2], ip_address[3]), 0, 40);
+        ssd1306_show(&disp);
         sleep_ms(5000);
 
         ssd1306_clear(&disp);
+        printf("refresh\n");
     }
     
 }
@@ -131,18 +143,21 @@ void connectMQTT() {
 static void s_mqtt_connection_cb(mqtt_client_t* client, void* arg, mqtt_connection_status_t status) {
     if (status == MQTT_CONNECT_ACCEPTED) {
         printf("Connected to MQTT broker successfully!\n");
-        } else {
+        mqtt_ready = true;
+    } else {
         printf("MQTT connection failed with status: %d\n", status);
+        mqtt_ready = false;
     }
 }
+
 
 
 void setup_gpios() {
     i2c_init(i2c1, 400000);
     gpio_set_function(14, GPIO_FUNC_I2C);
     gpio_set_function(15, GPIO_FUNC_I2C);
-    gpio_pull_up(2);
-    gpio_pull_up(3);
+    gpio_pull_up(14);
+    gpio_pull_up(15);
     disp.external_vcc=false;
     ssd1306_init(&disp, 128, 64, 0x3C, i2c1);
 

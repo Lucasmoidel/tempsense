@@ -30,13 +30,8 @@ SOFTWARE.
 
 #ifndef _inc_ssd1306
 #define _inc_ssd1306
-
 #include <pico/stdlib.h>
 #include <hardware/i2c.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /**
 *	@brief defines commands used in ssd1306
@@ -276,8 +271,4 @@ void ssd1306_draw_string_with_font(ssd1306_t *p, uint32_t x, uint32_t y, uint32_
 */
 void ssd1306_draw_string(ssd1306_t *p, uint32_t x, uint32_t y, uint32_t scale, const char *s);
 
-#ifdef __cplusplus
-}
 #endif
-
-#endif // _inc_ssd1306
